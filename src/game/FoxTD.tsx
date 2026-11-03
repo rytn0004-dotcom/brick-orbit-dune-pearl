@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CELL, COLS, findPath, GOAL, pointsOf, ROWS, SPAWN, cellKey } from "./grid";
+import { CELL, COLS, cellHeight, cellKey, emptyHeights, findPath, GOAL, pointsOf, presetMaps, rangeBonus, ROWS, SPAWN, type MapLayout } from "./grid";
 import { ENEMY_TYPES, TOWERS, type Special, type TowerDef } from "./types";
 
 const W = COLS * CELL;
@@ -7,6 +7,28 @@ const H = ROWS * CELL;
 const GRID = CELL;
 const MAX_WAVE = 12;
 const STAKE_COST = 40;
+const MAP_KEY = "foxtd-maps-v1";
+const LAST_KEY = "foxtd-last-layout";
+
+function readSavedMaps(): MapLayout[] {
+  try {
+    const raw = localStorage.getItem(MAP_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw) as MapLayout[];
+    if (!Array.isArray(data)) return [];
+    return data.filter((m) => m && typeof m.name === "string" && Array.isArray(m.heights)).slice(0, 8);
+  } catch {
+    return [];
+  }
+}
+
+function writeSavedMaps(maps: MapLayout[]) {
+  localStorage.setItem(MAP_KEY, JSON.stringify(maps.slice(0, 8)));
+}
+
+function rememberLayout(layout: MapLayout) {
+  localStorage.setItem(LAST_KEY, JSON.stringify(layout));
+}
 
 type Seg = { ax: number; ay: number; bx: number; by: number; len: number; start: number };
 const live = {
@@ -198,6 +220,14 @@ export function FoxTD() {
   const workshopRef = useRef(false);
   const pausedRef = useRef(false);
   const mapRef = useRef(new Set<string>());
+  const heightsRef = useRef<number[]>(emptyHeights());
+  const toolRef = useRef<"block" | "height">("block");
+  const brushRef = useRef(1);
+  const [savedMaps, setSavedMaps] = useState<MapLayout[]>(() => readSavedMaps());
+  const [mapName, setMapName] = useState("我的地圖");
+  const [activeMap, setActiveMap] = useState("潮坪");
+  const [tool, setTool] = useState<"block" | "height">("block");
+  const [brush, setBrush] = useState(1);
 
   useEffect(() => {
     goldRef.current = gold;
@@ -229,6 +259,12 @@ export function FoxTD() {
   useEffect(() => {
     pausedRef.current = paused;
   }, [paused]);
+  useEffect(() => {
+    toolRef.current = tool;
+  }, [tool]);
+  useEffect(() => {
+    brushRef.current = brush;
+  }, [brush]);
 
   const sim = useRef({
     towers: [] as Tower[],
@@ -248,6 +284,7 @@ export function FoxTD() {
     scene: {} as Record<string, HTMLImageElement>,
     pointer: { x: 0, y: 0, down: false },
     blocked: new Set<string>(),
+    heights: heightsRef.current,
   });
 
   useEffect(() => {
@@ -642,7 +679,6 @@ export function FoxTD() {
       setWave(s.wave);
     };
     (canvas as HTMLCanvasElement & { __begin?: () => void }).__begin = beginWave;
-    (window as unknown as { __fox?: typeof sim.current }).__fox = sim.current;
 
     const draw = () => {
       const s = sim.current;
@@ -729,14 +765,51 @@ export function FoxTD() {
         const gy = Math.floor(s.pointer.y / GRID);
         const px = gx * GRID + GRID / 2;
         const py = gy * GRID + GRID / 2;
+        const bonus = rangeBonus(cellHeight(s.heights, gx, gy));
         const ok = canPlace(gx, gy);
         ctx.beginPath();
-        ctx.arc(px, py, def.range, 0, Math.PI * 2);
+        ctx.arc(px, py, def.range + bonus, 0, Math.PI * 2);
         ctx.fillStyle = ok ? "rgba(120,200,255,0.1)" : "rgba(255,80,80,0.12)";
         ctx.fill();
         ctx.strokeStyle = ok ? "rgba(140,210,255,0.55)" : "rgba(255,90,90,0.6)";
         ctx.stroke();
+        if (bonus > 0 && ok) {
+          ctx.fillStyle = "#ffe08a";
+          ctx.font = "bold 12px sans-serif";
+          ctx.fillText(`高地 +${bonus}`, px - 28, py - 34);
+        }
       }
+
+      const pads = ["", "rgba(86, 176, 196, 0.38)", "rgba(120, 214, 230, 0.5)", "rgba(255, 214, 140, 0.55)"];
+      const lips = ["", "rgba(40, 90, 110, 0.55)", "rgba(50, 120, 140, 0.6)", "rgba(150, 100, 40, 0.55)"];
+      ctx.textAlign = "center";
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const h = cellHeight(s.heights, c, r);
+          const show = h > 0 || workshopRef.current;
+          if (!show) continue;
+          const x = c * CELL;
+          const y = r * CELL;
+          const lift = h * 5;
+          if (h > 0) {
+            ctx.fillStyle = lips[h];
+            ctx.fillRect(x + 4, y + 10 - lift, CELL - 8, CELL - 12);
+            ctx.fillStyle = pads[h];
+            ctx.fillRect(x + 4, y + 4 - lift, CELL - 8, CELL - 16);
+            ctx.strokeStyle = h === 3 ? "rgba(255,230,170,0.8)" : "rgba(190,240,255,0.45)";
+            ctx.strokeRect(x + 4, y + 4 - lift, CELL - 8, CELL - 16);
+          } else if (workshopRef.current) {
+            ctx.strokeStyle = "rgba(180,220,240,0.12)";
+            ctx.strokeRect(x + 4, y + 4, CELL - 8, CELL - 8);
+          }
+          if (workshopRef.current || h > 0) {
+            ctx.fillStyle = h === 0 ? "rgba(210,235,255,0.35)" : h === 3 ? "#fff4d2" : "#e9fbff";
+            ctx.font = "bold 11px sans-serif";
+            ctx.fillText(String(h), x + CELL / 2, y + 16 - lift);
+          }
+        }
+      }
+      ctx.textAlign = "left";
 
       for (const key of s.blocked) {
         const [c, r] = key.split(",").map(Number);
@@ -753,8 +826,9 @@ export function FoxTD() {
 
       if (selRef.current !== null && s.towers[selRef.current]) {
         const tw = s.towers[selRef.current];
+        const py = tw.y - cellHeight(s.heights, tw.gx, tw.gy) * 5;
         ctx.beginPath();
-        ctx.arc(tw.x, tw.y, tw.range, 0, Math.PI * 2);
+        ctx.arc(tw.x, py, tw.range, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(255,170,210,0.08)";
         ctx.fill();
         ctx.strokeStyle = "rgba(255,170,210,0.45)";
@@ -762,7 +836,8 @@ export function FoxTD() {
       }
 
       for (let i = 0; i < s.towers.length; i++) {
-        const tw = s.towers[i];
+        const src = s.towers[i];
+        const tw = { ...src, y: src.y - cellHeight(s.heights, src.gx, src.gy) * 5 };
         if (tw.stake) {
           const img = s.scene.pillar;
           const bob = Math.sin(t * 2 + i) * 2;
@@ -997,6 +1072,30 @@ export function FoxTD() {
       return true;
     };
     (canvas as HTMLCanvasElement & { __commit?: (n: Set<string>) => boolean }).__commit = commitBlocks;
+    (canvas as HTMLCanvasElement & { __applyMap?: (b: string[], h: number[]) => boolean }).__applyMap = (blocked, heights) => {
+      const next = new Set(blocked);
+      if (!commitBlocks(next)) return false;
+      const h = heightsRef.current;
+      for (let i = 0; i < COLS * ROWS; i++) h[i] = Math.max(0, Math.min(3, Math.round(heights[i] ?? 0)));
+      sim.current.heights = h;
+      mapRef.current = next;
+      return true;
+    };
+    try {
+      const raw = localStorage.getItem(LAST_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw) as MapLayout;
+        if (saved && Array.isArray(saved.heights)) {
+          (canvas as HTMLCanvasElement & { __applyMap?: (b: string[], h: number[]) => boolean }).__applyMap?.(
+            saved.blocked ?? [],
+            saved.heights,
+          );
+          setActiveMap(saved.name || "已保存地圖");
+        }
+      }
+    } catch {
+      /* ignore broken save */
+    }
 
     const local = (ev: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -1017,6 +1116,14 @@ export function FoxTD() {
         const gx = Math.floor(p.x / GRID);
         const gy = Math.floor(p.y / GRID);
         if (gx < 0 || gy < 0 || gx >= COLS || gy >= ROWS) return;
+        if (toolRef.current === "height") {
+          const i = gy * COLS + gx;
+          const h = brushRef.current;
+          heightsRef.current[i] = h;
+          sim.current.heights[i] = h;
+          setHover(h === 0 ? "平地，射程不加" : `高度 ${h} · 放塔射程 +${h * 30}`);
+          return;
+        }
         if ((gx === SPAWN.c && gy === SPAWN.r) || (gx === GOAL.c && gy === GOAL.r)) {
           setHover("出入口不能封");
           return;
@@ -1036,7 +1143,8 @@ export function FoxTD() {
       const s = sim.current;
       for (let i = 0; i < s.towers.length; i++) {
         const tw = s.towers[i];
-        if (Math.hypot(tw.x - p.x, tw.y - p.y) < 26) {
+        const py = tw.y - cellHeight(s.heights, tw.gx, tw.gy) * 5;
+        if (Math.hypot(tw.x - p.x, py - p.y) < 28) {
           selRef.current = i;
           setSel(i);
           pickRef.current = null;
@@ -1102,13 +1210,14 @@ export function FoxTD() {
       }
       goldRef.current -= def.cost;
       setGold(goldRef.current);
+      const bonus = rangeBonus(cellHeight(s.heights, gx, gy));
       s.towers.push({
         def: id,
         x: gx * GRID + GRID / 2,
         y: gy * GRID + GRID / 2,
         damage: def.damage,
         cooldown: def.cooldown,
-        range: def.range,
+        range: def.range + bonus,
         cd: 0,
         level: 1,
         aim: 0,
@@ -1120,7 +1229,7 @@ export function FoxTD() {
         gx,
         gy,
       });
-      setHover(`已放置 ${def.name}`);
+      setHover(bonus > 0 ? `已放置 ${def.name} · 高地射程 +${bonus}` : `已放置 ${def.name}`);
     };
 
     canvas.addEventListener("pointermove", onMove);
@@ -1206,6 +1315,37 @@ export function FoxTD() {
     setSel(sel);
   }
 
+  function loadLayout(layout: MapLayout) {
+    const canvas = canvasRef.current as HTMLCanvasElement & {
+      __applyMap?: (b: string[], h: number[]) => boolean;
+    };
+    const ok = canvas?.__applyMap?.(layout.blocked, layout.heights);
+    if (!ok) {
+      setHover("這張地圖會封死路線");
+      return;
+    }
+    setActiveMap(layout.name);
+    if (!layout.id.startsWith("preset-")) setMapName(layout.name);
+    rememberLayout({ ...layout, heights: heightsRef.current.slice(), blocked: [...mapRef.current] });
+    setHover(`已載入 ${layout.name}`);
+  }
+
+  function saveMap() {
+    const name = mapName.trim().slice(0, 16) || "未命名地圖";
+    const entry: MapLayout = {
+      id: `user-${Date.now()}`,
+      name,
+      blocked: [...mapRef.current],
+      heights: heightsRef.current.map((n) => Math.max(0, Math.min(3, Math.round(n)))),
+    };
+    const next = [entry, ...savedMaps.filter((m) => m.name !== name)].slice(0, 8);
+    writeSavedMaps(next);
+    setSavedMaps(next);
+    setActiveMap(name);
+    rememberLayout(entry);
+    setHover(`已保存「${name}」，下次打開還在`);
+  }
+
   function sell() {
     if (sel === null) return;
     const tw = sim.current.towers[sel];
@@ -1279,7 +1419,7 @@ export function FoxTD() {
               <h2>{phase === "win" ? "潮退，聖地仍在" : phase === "lose" ? "結界破碎" : "狐仙結界"}</h2>
               <p className="mb-4 max-w-md text-sm text-[#c5dff2]">
                 {phase === "ready"
-                  ? "點地圖工房可先封路。戰鬥中放路障會依最短路改道，封死整張圖會被拒絕。每 5 波出現會拆塔的潮刃。可開無盡，或把速度拉到 10 倍。"
+                  ? "點地圖工房可先封路，或把地形抬到 1–3。除了平地，每高一階，塔的射程 +30，做好的地圖可以保存。戰鬥中放路障會依最短路改道。每 5 波出現會拆塔的潮刃。"
                   : phase === "win"
                     ? "十二波妖潮已被擋下。"
                     : "生命歸零。重新布置結界再試一次。"}
@@ -1300,8 +1440,44 @@ export function FoxTD() {
             </div>
           )}
           {workshop && phase !== "play" && (
-            <div className="hud-float" style={{ top: "auto", bottom: 12, left: 12, right: 12, pointerEvents: "auto" }}>
-              <div className="chip">點格子封路或拆除 · 出入口不能封 · 不能封死</div>
+            <div className="map-editor">
+              <p className="w-full text-xs leading-5 text-[#d5eeff]">
+                地圖「{activeMap}」。封路不能封死。地形 0 是平地；1、2、3 每高一階，放上去的塔射程 +30。
+              </p>
+              <button className={"btn ghost" + (tool === "block" ? " on" : "")} onClick={() => setTool("block")}>
+                封路
+              </button>
+              {[0, 1, 2, 3].map((h) => (
+                <button
+                  key={h}
+                  className={"btn ghost" + (tool === "height" && brush === h ? " on" : "")}
+                  onClick={() => {
+                    setTool("height");
+                    setBrush(h);
+                  }}
+                >
+                  {h === 0 ? "平地 0" : `高 ${h} +${h * 30}`}
+                </button>
+              ))}
+              {presetMaps().map((m) => (
+                <button key={m.id} className="btn ghost" onClick={() => loadLayout(m)}>
+                  {m.name}
+                </button>
+              ))}
+              {savedMaps.map((m) => (
+                <button key={m.id} className="btn ghost" onClick={() => loadLayout(m)}>
+                  {m.name}
+                </button>
+              ))}
+              <input
+                value={mapName}
+                maxLength={16}
+                aria-label="地圖名稱"
+                onChange={(e) => setMapName(e.target.value)}
+              />
+              <button className="btn" onClick={saveMap}>
+                保存地圖
+              </button>
               <button className="btn" onClick={() => setWorkshop(false)}>
                 完成工房
               </button>
@@ -1358,6 +1534,9 @@ export function FoxTD() {
               <div>特性：{selectedDef.trait}</div>
               <div>
                 傷害 {Math.round(selected.damage)} · 射速 {(1 / selected.cooldown).toFixed(2)}/秒 · 射程 {Math.round(selected.range)}
+                {cellHeight(sim.current.heights, selected.gx, selected.gy) > 0
+                  ? `（高地 +${cellHeight(sim.current.heights, selected.gx, selected.gy) * 30}）`
+                  : ""}
               </div>
               <div className="mt-2 flex gap-2">
                 <button className="btn ghost flex-1" onClick={() => upgrade("dmg")}>
