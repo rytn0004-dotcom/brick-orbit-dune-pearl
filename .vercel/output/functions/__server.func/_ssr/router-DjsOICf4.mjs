@@ -1,8 +1,9 @@
-import { i as __toESM } from "../_runtime.mjs";
+import { i as __toESM, n as __exportAll } from "../_runtime.mjs";
 import { K as require_react, _ as createFileRoute, b as require_jsx_runtime, d as Scripts, f as HeadContent, g as lazyRouteComponent, h as Outlet, m as createRouter, v as createRootRoute, y as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
-import { t as TriangleAlert } from "../_libs/lucide-react.mjs";
+import { r as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { a as union, i as string, n as number, r as object, t as literal } from "../_libs/zod.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-BQERCnah.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-DjsOICf4.js
+var router_DjsOICf4_exports = /* @__PURE__ */ __exportAll({ getRouter: () => getRouter });
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var FALLBACK_MESSAGE = "An unexpected error occurred. Try reloading the page.";
@@ -330,8 +331,8 @@ function PreviewHostBridge() {
 	}, [router]);
 	return null;
 }
-var styles_default = "/assets/styles-Ik7YUHP5.css";
-var APP_NAME = "狐仙塔防";
+var styles_default = "/assets/styles-C6_1lrcz.css";
+var APP_NAME = "澄潮守城";
 var Route$1 = createRootRoute({
 	head: () => ({
 		meta: [
@@ -343,11 +344,11 @@ var Route$1 = createRootRoute({
 			{ title: APP_NAME },
 			{
 				name: "theme-color",
-				content: "#071422"
+				content: "#0c1210"
 			},
 			{
 				name: "description",
-				content: "水下狐仙守護者塔防：放置角色、升級傷害與射速，擋住一波波妖潮。"
+				content: "200×200 澄潮守城：自由移動視角，多入口關卡，把頻率編成樁守住城門。"
 			}
 		],
 		links: [
@@ -370,7 +371,7 @@ var Route$1 = createRootRoute({
 			},
 			{
 				rel: "stylesheet",
-				href: "https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&family=Cormorant+Garamond:wght@600;700&display=swap"
+				href: "https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@600;700&display=swap"
 			}
 		]
 	}),
@@ -384,7 +385,7 @@ var Route$1 = createRootRoute({
 		] })]
 	})
 });
-var $$splitComponentImporter = () => import("./routes-C184HYE3.mjs");
+var $$splitComponentImporter = () => import("./routes-C6N8Rh2E.mjs");
 var rootRouteChildren = { IndexRoute: createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter, "component") }).update({
 	id: "/",
 	path: "/",
@@ -399,4 +400,4 @@ function getRouter() {
 	});
 }
 //#endregion
-export { getRouter };
+export { getRouter, router_DjsOICf4_exports as t };

@@ -1,0 +1,50 @@
+存檔、出怪編輯，還有紅邊都補上了。
+
+存檔 / 讀檔在右側。會記住地圖路障、自訂波次、塔、金幣、生命和波數。暫停時也可以存。讀回來時，場上還沒打完的怪會從這一波重來。
+地圖工房打開後，左側點格子封路，右側可以改每一波各怪的數量，也能加波，或改回自動出怪。
+紅框是去背沒清乾淨的洋紅邊。路障、珊瑚、敵人、彈道和命中特效都重新去過邊，並稍微往內裁，避免再畫出方框。
+我在這邊更新大部分的資料，幫我把新版本加載到這裡，https://github.com/rytn0004-dotcom/winter-apex-cliff-clover
+以下是更新日誌
+Adding map editing and terrain height features
+先把塔的動畫和妖王走路收尾，再加可保存的地圖編輯，以及 0 到 3 的地形高度（每高一階，塔的射程 +30）。
+Implementing map editor with terrain height
+Implementing terrain height and map editor
+Implementing map editor with terrain height
+Implementing terrain height editing
+Implementing terrain height and map editor
+Implementing map editor with terrain height
+Implementing terrain height and map editor
+Implementing map editor with terrain height
+Adding terrain height display and map editor
+讀取檔案
+讀取檔案
+Adding map save and load functions
+讀取檔案
+Reordering map application logic
+Verifying map editor logic and types
+Clicking canvas to paint terrain height
+Auto-loading the last saved map on startup
+Restoring the last saved map layout
+Verifying map save and terrain height logic
+Waiting for tool state to update
+Verifying map save and tower range
+Waiting for tower selection state to update
+工房已能封路，但不會留下地形。我會加上 0–3 的高度、可保存的地圖，並讓高地塔每高一階射程 +30。winter-apex-cliff-clover 的新版本已經載進這個預覽。
+
+地圖工房可以封路，也能把地形畫成 0 到 3。0 是平地，每高一階，放在上面的塔射程 +30。
+預設地圖有潮坪、月脊、雙丘。做好的地圖可以存檔，下次開遊戲會自動載入上次那張。
+前五位狐仙有攻擊動畫，妖王有走路圖。
+這個有加功能進這個嗎?
+存檔、出怪編輯，還有紅邊都補上了。
+
+存檔 / 讀檔在右側。會記住地圖路障、自訂波次、塔、金幣、生命和波數。暫停時也可以存。讀回來時，場上還沒打完的怪會從這一波重來。
+地圖工房打開後，左側點格子封路，右側可以改每一波各怪的數量，也能加波，或改回自動出怪。
+紅框是去背沒清乾淨的洋紅邊。路障、珊瑚、敵人、彈道和命中特效都重新去過邊，並稍微往內裁，避免再畫出方框。
+先前沒有。從 GitHub 載入時，那三項被蓋掉了，當時只留下地圖存檔。現在已經補回這一版，地形高度也還在。
+
+存檔 / 讀檔在右側，暫停時也能存。會記住路障、自訂波次、塔、金幣、生命、波數和地形高度。讀回來時，這一波會重開。
+地圖工房打開後，左側可以封路或畫 0–3 高度，右側可以改每一波各怪的數量、加波，或改回自動出怪。
+紅邊路障、珊瑚、敵人、彈道和命中特效會往內裁一點再畫，避免洋紅邊變成方框。
+將地圖擴大到200x200，讓視角不局限於中間(讓視角可以自由移動)
+多擴充遊戲關卡，並把功能加入自訂工房。且能設計怪物每波波次的怪物種類，設計怪物的各種屬性跟特技。
+加入設定怪物的進攻入口跟終點。比如多個入口該波次的怪物會平均進攻
